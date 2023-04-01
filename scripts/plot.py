@@ -12,13 +12,13 @@ import pandas as pd
 def plot(paths, args):
     dfs = []
 
+    pattern = r"(\{.+?\})"
+
     for path in paths:
         with open(path, "r") as f:
             text = f.read()
 
         rows = []
-
-        pattern = r"(\{.+?\})"
 
         for row in re.findall(pattern, text, re.DOTALL):
             try:
@@ -31,11 +31,7 @@ def plot(paths, args):
 
         df = pd.DataFrame(rows)
 
-        if "name" in df:
-            df["name"] = df["name"].fillna("train")
-        else:
-            df["name"] = "train"
-
+        df["name"] = df["name"].fillna("train") if "name" in df else "train"
         df["group"] = str(path.parents[args.group_level])
         df["group"] = df["group"] + "/" + df["name"]
 

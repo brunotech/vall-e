@@ -14,14 +14,14 @@ def get_model(name):
         raise ValueError("Model name should start with AR or NAR.")
 
     if "-quarter" in name:
-        model = Model(
+        return Model(
             cfg.num_tokens,
             d_model=256,
             n_heads=4,
             n_layers=12,
         )
     elif "-half" in name:
-        model = Model(
+        return Model(
             cfg.num_tokens,
             d_model=512,
             n_heads=8,
@@ -31,11 +31,9 @@ def get_model(name):
         if name not in ["ar", "nar"]:
             raise NotImplementedError(name)
 
-        model = Model(
+        return Model(
             cfg.num_tokens,
             d_model=1024,
             n_heads=16,
             n_layers=12,
         )
-
-    return model

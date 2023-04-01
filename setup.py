@@ -19,7 +19,7 @@ def write_version(version_core, pre_release=True):
         version = version_core
 
     with open(Path("vall_e", "version.py"), "w") as f:
-        f.write('__version__ = "{}"\n'.format(version))
+        f.write(f'__version__ = "{version}"\n')
 
     return version
 

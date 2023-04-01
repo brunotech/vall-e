@@ -153,9 +153,7 @@ class AdaLN(nn.Module):
         # Did they use AdaNorm inside AdaLN? (as follows)
         h = self.c * (1 - (self.k * h).detach()) * h
 
-        y = logγ.exp() * h + β
-
-        return y
+        return logγ.exp() * h + β
 
 
 class PrenormResidual(nn.Module):
@@ -236,9 +234,11 @@ class Block(nn.Sequential):
 
 class Embedding(nn.Embedding):
     def forward(self, x_list: list[Tensor]) -> list[Tensor]:
-        if len(x_list) == 0:
-            return []
-        return super().forward(torch.cat(x_list)).split([*map(len, x_list)])
+        return (
+            super().forward(torch.cat(x_list)).split([*map(len, x_list)])
+            if x_list
+            else []
+        )
 
 
 class MultiEmbedding(nn.Module):
@@ -253,7 +253,7 @@ class MultiEmbedding(nn.Module):
         self.weight = nn.Parameter(torch.randn(max_n_levels, n_tokens, token_dim))
 
     def forward(self, x_list: list[Tensor]) -> list[Tensor]:
-        if len(x_list) == 0:
+        if not x_list:
             return []
 
         w = self.weight
@@ -365,10 +365,7 @@ class Base(nn.Module):
 
     @staticmethod
     def _samplewise_merge_tensors(*l, sep: Tensor | None):
-        if sep is None:
-            cat = torch.cat
-        else:
-            cat = partial(_join, sep=sep)
+        cat = torch.cat if sep is None else partial(_join, sep=sep)
         return [*map(cat, zip(*l))]
 
     @overload
@@ -442,7 +439,7 @@ class Base(nn.Module):
         h_list = [hi[:li] for hi, li in zip(h, map(len, x_list))]
 
         if targ_list is not None:
-            if any([l == 0 for l in map(len, targ_list)]):
+            if any(l == 0 for l in map(len, targ_list)):
                 raise ValueError("Cannot compute loss given empty targ_list.")
 
             device = h.device
@@ -488,11 +485,10 @@ class Base(nn.Module):
 
         if return_all_resp:
             logits = [hi[-li:] for hi, li in zip(h_list, map(len, resps_list))]
-            ret = [
-                Categorical(logits=hi / sampling_temperature).sample() for hi in logits
+            return [
+                Categorical(logits=hi / sampling_temperature).sample()
+                for hi in logits
             ]
         else:
             logits = torch.stack([hi[-1] for hi in h_list])
-            ret = Categorical(logits=logits / sampling_temperature).sample()
-
-        return ret
+            return Categorical(logits=logits / sampling_temperature).sample()

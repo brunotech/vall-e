@@ -60,15 +60,11 @@ def _interleaved_reorder(l, fn):
 def _validate(path, min_phones, max_phones):
     phones = _get_phones(path)
     unique_phones = list(set(phones))
-    if len(unique_phones) == 0:
+    if not unique_phones:
         return False
     if len(unique_phones) == 1 and unique_phones[0] == "_":
         return False
-    if len(phones) < min_phones:
-        return False
-    if len(phones) > max_phones:
-        return False
-    return True
+    return False if len(phones) < min_phones else len(phones) <= max_phones
 
 
 def _get_spkr_name(path) -> str:
@@ -105,10 +101,7 @@ class VALLEDatset(Dataset):
             p for p in self.paths if len(self.paths_by_spkr_name[_get_spkr_name(p)]) > 1
         ]
 
-        if training:
-            self.sampler = Sampler(self.paths, [_get_spkr_name])
-        else:
-            self.sampler = None
+        self.sampler = Sampler(self.paths, [_get_spkr_name]) if training else None
 
     def _get_paths_by_spkr_name(self, extra_paths_by_spkr_name: dict[str, list]):
         ret = defaultdict(list)
@@ -140,7 +133,7 @@ class VALLEDatset(Dataset):
         choices = set(self.paths_by_spkr_name[spkr_name]) - {ignore}
         choices = [*choices]
 
-        if len(choices) == 0:
+        if not choices:
             raise ValueError(
                 f"Failed to find another different utterance for {spkr_name}."
             )
@@ -151,9 +144,7 @@ class VALLEDatset(Dataset):
             if random.random() > cfg.p_additional_prompt:
                 break
 
-        prom = torch.cat(prom_list)
-
-        return prom
+        return torch.cat(prom_list)
 
     def __getitem__(self, index):
         if self.training:
@@ -222,7 +213,7 @@ def _load_train_val_paths():
     for data_dir in cfg.data_dirs:
         paths.extend(tqdm(data_dir.rglob("*.qnt.pt")))
 
-    if len(paths) == 0:
+    if not paths:
         raise RuntimeError(f"Failed to find any .qnt.pt file in {cfg.data_dirs}.")
 
     pairs = sorted([(_get_spkr_name(p), p) for p in paths])
@@ -245,8 +236,7 @@ def _load_test_paths():
     test_paths = []
     for data_dir in cfg.test_data_dirs:
         test_paths.extend(data_dir.rglob("*.phn.txt"))
-    test_paths = sorted(test_paths)
-    return test_paths
+    return sorted(test_paths)
 
 
 @cfg.diskcache()

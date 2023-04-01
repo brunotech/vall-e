@@ -29,9 +29,7 @@ class AR(Base):
 
     def _prune(self, l: Tensor):
         indices = (l == self.stop_token).nonzero()
-        if len(indices) == 0:
-            return l
-        return l[: indices.min().item()]
+        return l if len(indices) == 0 else l[: indices.min().item()]
 
     @staticmethod
     def _unsqueeze_list(x_list, axis=-1):
@@ -87,8 +85,7 @@ class AR(Base):
                 resp_list[i] = torch.cat([resp_list[i], ri[None]])
             if stopped.all().item():
                 break
-        pruned = [self._prune(r) for r in resp_list]
-        return pruned
+        return [self._prune(r) for r in resp_list]
 
 
 def example_usage():

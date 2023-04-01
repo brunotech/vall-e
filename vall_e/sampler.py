@@ -38,11 +38,9 @@ class Sampler:
 
     def _sample(self, tree: dict | list):
         if isinstance(tree, list):
-            ret = random.choice(tree)
-        else:
-            key = random.choice([*tree.keys()])
-            ret = self._sample(tree[key])
-        return ret
+            return random.choice(tree)
+        key = random.choice([*tree.keys()])
+        return self._sample(tree[key])
 
     def sample(self):
         return self._sample(self.tree)
